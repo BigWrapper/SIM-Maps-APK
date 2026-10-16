@@ -1,40 +1,40 @@
 name: Build SIM Maps APK
 on: [push]
 jobs:
- build:
- runs-on: ubuntu-latest
- steps:
- - uses: actions/checkout@v4
- with:
- path: my
- - name: Clone base
- run: git clone --recursive https://github.com/organicmaps/organicmaps.git base
- - name: Replace android
- run: |
- rm -rf base/android
- cp -r my/android base/android
- - name: Setup Java
- uses: actions/setup-java@v4
- with:
- distribution: temurin
- java-version: "17"
- - name: Setup Android
- uses: android-actions/setup-android@v3
- - name: Install NDK and CMake
- run: |
- sdkmanager --install "ndk;29.0.14206865" "cmake;3.22.1"
- echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/29.0.14206865" >> $GITHUB_ENV
- - name: Set up Android SDK path
- run: |
- cd base
-./tools/android/set_up_android.py --sdk $ANDROID_SDK_ROOT
- - name: Build APK
- run: |
- cd base/android
- chmod +x gradlew
-./gradlew assembleWebDebug -Parm64 --stacktrace
- - name: Upload APK
- uses: actions/upload-artifact@v4
- with:
- name: SIM-Maps-APK
- path: base/android/app/build/outputs/apk/**/*.apk
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: my
+      - name: Clone base
+        run: git clone --recursive https://github.com/organicmaps/organicmaps.git base
+      - name: Replace android
+        run: |
+          rm -rf base/android
+          cp -r my/android base/android
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Android
+        uses: android-actions/setup-android@v3
+      - name: Install NDK and CMake
+        run: |
+          sdkmanager --install "ndk;29.0.14206865" "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/29.0.14206865" >> $GITHUB_ENV
+      - name: Set up Android SDK path
+        run: |
+          cd base
+        ./tools/android/set_up_android.py --sdk $ANDROID_SDK_ROOT
+      - name: Build APK
+        run: |
+          cd base/android
+          chmod +x gradlew
+        ./gradlew assembleWebDebug -Parm64 --stacktrace
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SIM-Maps-APK
+          path: base/android/app/build/outputs/apk/**/*.apk
