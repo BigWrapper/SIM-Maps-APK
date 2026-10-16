@@ -4,25 +4,38 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout self
+        uses: actions/checkout@v4
         with:
           path: my
-      - name: Clone base
+      - name: Clone OrganicMaps base
         run: git clone --recursive https://github.com/organicmaps/organicmaps.git base
-      - name: Replace android folder
-        run: rm -rf base/android && cp -r my/android base/ && ls base/android
-      - name: Set up JDK
-        uses: actions/setup-java@v5
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: Build
+      - name: Replace android folder with SIM Maps
         run: |
-          cd base/android
-          chmod +x gradlew
-         ./gradlew assembleWebDebug --stacktrace
+          rm -rf base/android
+          cp -r my/android base/android
+          ls base/android
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install NDK and CMake
+        run: |
+          sdkmanager "ndk;25.1.8937393" "cmake;3.22.1"
+          sdkmanager --list_installed
+      - name: Build APK
+        run: |
+          cd base
+          chmod +x tools/android/build.sh || true
+          chmod +x android/gradlew
+         ./tools/android/build.sh -a webDebug || (cd android &&./gradlew assembleWebDebug --stacktrace)
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SIM-Maps-APK
-          path: base/android/app/build/outputs/apk/web/debug/*.apk
+          path: |
+            base/android/app/build/outputs/apk/**/*.apk
+            base/**/build/outputs/apk/**/*.apk
