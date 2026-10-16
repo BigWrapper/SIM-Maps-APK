@@ -27,12 +27,12 @@ jobs:
       - name: Set up Android SDK path
         run: |
           cd base
-        ./tools/android/set_up_android.py --sdk $ANDROID_SDK_ROOT
+         ./tools/android/set_up_android.py --sdk $ANDROID_SDK_ROOT
       - name: Build APK
         run: |
           cd base/android
           chmod +x gradlew
-        ./gradlew assembleWebDebug -Parm64 --stacktrace
+         ./gradlew assembleWebDebug -Parm64 --stacktrace
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
