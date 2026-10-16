@@ -1,19 +1,32 @@
 name: Build SIM Maps APK
-on: [push, workflow_dispatch]
+on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone base OrganicMaps
-        run: git clone --depth 1 https://github.com/organicmaps/organicmaps.git base --recurse-submodules
-      - name: Checkout your android
-        uses: actions/checkout@v4
-        with: {path: my}
+      - uses: actions/checkout@v5
+        with:
+          path: my
+      - name: Clone OrganicMaps base
+        run: git clone --recursive https://github.com/organicmaps/organicmaps.git base
       - name: Replace android folder
-        run: rm -rf base/android && cp -r my/android base/android
-      - uses: actions/setup-java@v4
-        with: {java-version: 17, distribution: temurin}
-      - uses: android-actions/setup-android@v3
-      - run: cd base/android && chmod +x gradlew && ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
-        with: {name: SIM-Maps-APK, path: base/android/build/outputs/apk/debug/*.apk}
+        run: rm -rf base/android && cp -r my/android base/ && ls base/android
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Setup SDK + NDK
+        run: |
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          yes | sdkmanager --install "ndk;25.1.8937393" "cmake;3.22.1" "platforms;android-33"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+      - name: Build APK
+        run: |
+          cd base/android
+          chmod +x gradlew
+         ./gradlew assembleWebDebug --stacktrace
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SIM-Maps-APK
+          path: base/android/app/build/outputs/apk/web/debug/*.apk
