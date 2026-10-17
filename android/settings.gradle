@@ -42,3 +42,10 @@ include ':sdk:widgets:speedlimit'
 
 // Fix for Gradle 9 compatibility - allow duplicate names
 buildCache { local { isEnabled = false } }
+
+// FIX for Gradle 8 - allow duplicate project names (Organic Maps needs this)
+gradleEnterprise {
+  buildScan {
+    allowDuplicateProjectNames = true
+  }
+}
