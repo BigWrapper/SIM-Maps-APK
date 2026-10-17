@@ -43,9 +43,9 @@
     <!-- Text in About screen -->
     <string name="about_proposition_2">• Offline maps for SA - No data needed</string>
     <!-- Text in About screen -->
-    <string name="about_proposition_3">• Donate: Capitec 2450748535 - Tap to donate</string>
+    <string name="about_proposition_3">• Support: Capitec 2450748535 - Keep maps free</string>
     <!-- Text in About screen -->
-    <string name="about_developed_by_enthusiasts">SIM Maps v1.0 - Custom build for Northern Cape community. Created by Geandre Van Wyk, Upington 8800, South Africa. Capitec: 2450748535. Email: drevanwyk1@gmail.com. Based on Organic Maps open-source.</string>
+    <string name="about_developed_by_enthusiasts">SIM Maps v1.0 - Custom build for Northern Cape community. Based on SIM Maps open-source. Created by Geandre Van Wyk, Upington 8800, South Africa. Donate via Capitec 2450748535 to support development. Contact: drevanwyk1@gmail.com | WhatsApp: 0645263038</string>
     <!-- The button that opens system location settings -->
     <string name="location_settings">Location Settings</string>
     <string name="close">Close</string>
@@ -247,7 +247,7 @@
     <!-- Menu button -->
     <string name="menu">Menu</string>
     <!-- Text in menu -->
-    <string name="website">Website</string>
+    <string name="website">simmaps.app</string>
     <!-- Text in About menu, opens SIM Maps news website -->
     <string name="news">News</string>
     <!-- Settings: Send feedback button and dialog title -->
@@ -317,7 +317,7 @@
     <!-- Settings "Appearance" category: "Scheduled" title, should be consistent with the pref_appearance_title translation. -->
     <string name="pref_appearance_scheduled">Light from dawn till dusk</string>
     <!-- Tex label above the Donate button -->
-    <string name="donate_description">Tap to donate via Capitec 2450748535 - Geandre Van Wyk - Upington. Account will be copied and Capitec app will open.</string>
+    <string name="donate_description">Support SIM Maps - Capitec 2450748535 - Geandre Van Wyk - Upington</string>
 
     <!-- SECTION: Routing dialogs strings -->
     <string name="dialog_routing_disclaimer_title">When following the route, please keep in mind:</string>
@@ -910,4 +910,11 @@
     <!-- Accessibility label for the button that reverses the complete planned route, including intermediate stops. -->
     <string name="reverse_route">Reverse route</string>
     <string name="donate_capitec">Donate via Capitec - Account: 1234567890 - SIM Maps Upington</string>
+
+    <!-- SIM Maps - Geandre Donation -->
+    <string name="sim_donation_title">Support SIM Maps ❤️</string>
+    <string name="sim_donation_message">SIM Maps is a free offline map built for Northern Cape - Upington. Many of our people don't have data or money for online maps. Your donation keeps this map free, offline, and alive for our community. Every Rand counts. Capitec: 2450748535 (Geandre Van Wyk) - Dankie! Enkosi! Thank you!</string>
+    <string name="sim_donation_button">Donate via Capitec 2450748535</string>
+    <string name="sim_donation_whatsapp">WhatsApp: 064 526 3038</string>
+    
 </resources>
