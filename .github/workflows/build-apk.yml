@@ -4,8 +4,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout FULL history (fix for line 25 bash 127)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
@@ -16,35 +15,33 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install NDK CMake Python Git
+      - name: Patch build.gradle bypass bash 127
+        run: |
+          cd ${{ github.workspace }}
+          sed -n '1,50p' android/build.gradle
+          python3 /tmp/patch.py || true
+          # Also fix permissions
+          chmod +x tools/* 2>/dev/null || true
+          chmod +x ../tools/* 2>/dev/null || true
+          chmod +x android/gradlew
+          ls -la tools/ | head -20 || true
+
+      - name: Install NDK
         run: |
           export ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           echo "ndk.dir=$ANDROID_HOME/ndk/29.0.14206865" >> android/local.properties
-          cat android/local.properties
-          sudo apt-get update -y
-          sudo apt-get install -y python3 git bash
-          python3 --version
-          git --version
-          bash --version
-          # Try install NDK if missing
-          sdkmanager --install "ndk;29.0.14206865" "cmake;3.22.1" || true
-          ls $ANDROID_HOME/ndk/29.0.14206865 || true
-          # Check version script exists
-          ls -la tools/ | head -20
-          ls -la android/../tools/ 2>&1 | head -20
-          cat android/build.gradle | sed -n '20,35p'
+          sdkmanager --install "ndk;29.0.14206865" "cmake;3.22.1" "platforms;android-34" "build-tools;34.0.0" || true
 
-      - name: Build Web Debug arm64
+      - name: Build Web Debug
         run: |
           cd android
-          chmod +x gradlew
+          ./gradlew assembleWebDebug -Parm64 --stacktrace --info 2>&1 | head -n 200
           ./gradlew assembleWebDebug -Parm64 --stacktrace
 
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: SIM-Maps-APK-Geandre-v48-FULL-HISTORY
-          path: |
-            android/app/build/outputs/apk/**/*.apk
+          name: SIM-Maps-APK-Geandre-v49-PATCHED
+          path: android/app/build/outputs/apk/**/*.apk
