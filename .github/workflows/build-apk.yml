@@ -14,17 +14,20 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install NDK and CMake
+      - name: Install NDK and CMake (use preinstalled SDK)
         run: |
-          sdkmanager --install "ndk;29.0.14206865" "cmake;3.22.1" "platforms;android-34" "build-tools;34.0.0"
-          echo "ndk.dir=$ANDROID_HOME/ndk/29.0.14206865" > android/local.properties
-          echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls $ANDROID_HOME || ls /usr/local/lib/android/sdk
+          export ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+          sdkmanager --install "ndk;29.0.14206865" "cmake;3.22.1" "platforms;android-34" "build-tools;34.0.0" || true
+          yes | sdkmanager --licenses || true
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          echo "ndk.dir=$ANDROID_HOME/ndk/29.0.14206865" >> android/local.properties
           cat android/local.properties
+          ls $ANDROID_HOME/ndk/ || true
 
-      - name: Build SIM Maps APK (Web Debug - arm64)
+      - name: Build SIM Maps APK Web Debug arm64
         run: |
           cd android
           chmod +x gradlew
@@ -34,7 +37,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: SIM-Maps-APK-Geandre-v46-FULL-BUILD
+          name: SIM-Maps-APK-Geandre-v47
           path: |
             android/app/build/outputs/apk/**/*.apk
-            android/app/build/outputs/apk/web/debug/*.apk
