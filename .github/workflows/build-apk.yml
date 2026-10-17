@@ -16,63 +16,64 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: FIX Nmcp duplicate names + bash 127
+      - name: FIX both errors correctly
         run: |
-          echo "=== FIX 1: settings.gradle - allowDuplicateProjectNames ==="
-          cat android/settings.gradle | head -n 100
-          # Add nmcp config to settings.gradle if not exists
+          echo "=== Revert previous bad patch ==="
+          git checkout -- android/settings.gradle android/build.gradle || true
+          
           python3 << 'PY'
           import pathlib
-          # Fix settings.gradle
+          # FIX 1: settings.gradle - Add pluginManagement for nmcp and allowDuplicate
           p = pathlib.Path("android/settings.gradle")
           text = p.read_text()
+          
+          # Add pluginManagement with nmcp if not present
+          if "com.gradleup.nmcp" not in text:
+              # Insert at top
+              plugin_block = '''pluginManagement {
+            plugins {
+              id "com.gradleup.nmcp" version "0.0.8"
+            }
+            repositories {
+              gradlePluginPortal()
+              google()
+              mavenCentral()
+            }
+          }
+          '''
+              text = plugin_block + "\n" + text
+          
+          # Add nmcp config at bottom if not present
           if "allowDuplicateProjectNames" not in text:
-              # Add after plugins block or at end
-              if "nmcp {" in text:
-                  text = text.replace("nmcp {", "nmcp {\n  allowDuplicateProjectNames.set(true)")
-              else:
-                  # Append at end
-                  text += "\n\n// FIX for Nmcp duplicate project names - Geandre v53\nnmcp {\n  allowDuplicateProjectNames.set(true)\n}\n"
+              text += '''
+          // Fix for Gradle 8.7+ duplicate project names check - Geandre v54
+          plugins.withId("com.gradleup.nmcp") {
+            nmcp {
+              allowDuplicateProjectNames.set(true)
+            }
+          }
+          '''
+          
           p.write_text(text)
-          print("settings.gradle patched")
-          print(text[-500:])
-
-          # Fix root settings.gradle too
-          p2 = pathlib.Path("android/../settings.gradle") if pathlib.Path("android/../settings.gradle").exists() else None
-          # Actually root is android/ is root project? Check both
-          for path in ["settings.gradle", "android/settings.gradle"]:
-              try:
-                  pp = pathlib.Path(path)
-                  if pp.exists():
-                      t = pp.read_text()
-                      if "allowDuplicateProjectNames" not in t:
-                          t += "\n\nnmcp {\n  allowDuplicateProjectNames.set(true)\n}\n"
-                          pp.write_text(t)
-                          print(f"Patched {path}")
-              except Exception as e:
-                  print(e)
-
-          # Fix build.gradle line 25 - getVersion bash issue
-          p3 = pathlib.Path("android/build.gradle")
-          t = p3.read_text()
-          # Replace bash with sh and git calls with echo
+          print("Fixed settings.gradle")
+          print(text[-800:])
+          
+          # FIX 2: build.gradle - bash 127 - hardcode version
+          p2 = pathlib.Path("android/build.gradle")
+          t = p2.read_text()
+          # Replace bash with sh and git calls
           t = t.replace("'bash'", "'sh'").replace('"bash"', '"sh"')
           t = t.replace("git rev-list --count HEAD", "echo 1")
           t = t.replace("git rev-parse", "echo abc")
-          # Hardcode version methods to avoid failing bash
-          if "def getVersion()" in t or "def getVersionCode" in t:
-              # Replace method bodies
-              t = t.replace("def getVersionCode() {", "def getVersionCode_ORIG() {")
-              t = t.replace("def getVersionName() {", "def getVersionName_ORIG() {")
-              t = "def getVersionCode() { return 1001 }\ndef getVersionName() { return \"2026.10.17-SIM-Maps-Geandre\" }\n" + t
-          p3.write_text(t)
-          print("build.gradle patched")
+          t = t.replace("git describe", "echo v1")
+          p2.write_text(t)
+          print("Fixed build.gradle bash")
           PY
-
-          echo "=== AFTER PATCH settings.gradle ==="
-          cat android/settings.gradle | tail -n 30
-          echo "=== AFTER PATCH build.gradle top 60 ==="
-          sed -n '1,70p' android/build.gradle
+          
+          echo "=== Patched settings.gradle ==="
+          cat android/settings.gradle | tail -n 50
+          echo "=== Patched build.gradle lines 1-50 ==="
+          sed -n '1,50p' android/build.gradle
 
       - name: Setup SDK NDK
         run: |
@@ -81,9 +82,8 @@ jobs:
           yes | sdkmanager --licenses || true
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           echo "ndk.dir=$ANDROID_HOME/ndk/29.0.14206865" >> android/local.properties
-          cat android/local.properties
 
-      - name: Build Web Debug arm64
+      - name: Build Web Debug
         run: |
           cd android
           chmod +x gradlew
@@ -93,5 +93,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: SIM-Maps-APK-Geandre-v53-FIXED
+          name: SIM-Maps-APK-Geandre-v54
           path: android/app/build/outputs/apk/**/*.apk
