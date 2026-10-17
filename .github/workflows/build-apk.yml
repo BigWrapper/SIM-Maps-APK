@@ -16,10 +16,10 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --info | tail -n 150
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: SIM-Maps-APK-Geandre-v44
+          name: SIM-Maps-APK-Geandre-v45
           path: android/app/build/outputs/apk/debug/*.apk
