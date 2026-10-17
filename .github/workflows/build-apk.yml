@@ -3,45 +3,95 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Set up Java 17
+      - name: Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
 
-      - name: Patch build.gradle bypass bash 127
+      - name: FIX Nmcp duplicate names + bash 127
         run: |
-          cd ${{ github.workspace }}
-          sed -n '1,50p' android/build.gradle
-          python3 /tmp/patch.py || true
-          # Also fix permissions
-          chmod +x tools/* 2>/dev/null || true
-          chmod +x ../tools/* 2>/dev/null || true
-          chmod +x android/gradlew
-          ls -la tools/ | head -20 || true
+          echo "=== FIX 1: settings.gradle - allowDuplicateProjectNames ==="
+          cat android/settings.gradle | head -n 100
+          # Add nmcp config to settings.gradle if not exists
+          python3 << 'PY'
+          import pathlib
+          # Fix settings.gradle
+          p = pathlib.Path("android/settings.gradle")
+          text = p.read_text()
+          if "allowDuplicateProjectNames" not in text:
+              # Add after plugins block or at end
+              if "nmcp {" in text:
+                  text = text.replace("nmcp {", "nmcp {\n  allowDuplicateProjectNames.set(true)")
+              else:
+                  # Append at end
+                  text += "\n\n// FIX for Nmcp duplicate project names - Geandre v53\nnmcp {\n  allowDuplicateProjectNames.set(true)\n}\n"
+          p.write_text(text)
+          print("settings.gradle patched")
+          print(text[-500:])
 
-      - name: Install NDK
+          # Fix root settings.gradle too
+          p2 = pathlib.Path("android/../settings.gradle") if pathlib.Path("android/../settings.gradle").exists() else None
+          # Actually root is android/ is root project? Check both
+          for path in ["settings.gradle", "android/settings.gradle"]:
+              try:
+                  pp = pathlib.Path(path)
+                  if pp.exists():
+                      t = pp.read_text()
+                      if "allowDuplicateProjectNames" not in t:
+                          t += "\n\nnmcp {\n  allowDuplicateProjectNames.set(true)\n}\n"
+                          pp.write_text(t)
+                          print(f"Patched {path}")
+              except Exception as e:
+                  print(e)
+
+          # Fix build.gradle line 25 - getVersion bash issue
+          p3 = pathlib.Path("android/build.gradle")
+          t = p3.read_text()
+          # Replace bash with sh and git calls with echo
+          t = t.replace("'bash'", "'sh'").replace('"bash"', '"sh"')
+          t = t.replace("git rev-list --count HEAD", "echo 1")
+          t = t.replace("git rev-parse", "echo abc")
+          # Hardcode version methods to avoid failing bash
+          if "def getVersion()" in t or "def getVersionCode" in t:
+              # Replace method bodies
+              t = t.replace("def getVersionCode() {", "def getVersionCode_ORIG() {")
+              t = t.replace("def getVersionName() {", "def getVersionName_ORIG() {")
+              t = "def getVersionCode() { return 1001 }\ndef getVersionName() { return \"2026.10.17-SIM-Maps-Geandre\" }\n" + t
+          p3.write_text(t)
+          print("build.gradle patched")
+          PY
+
+          echo "=== AFTER PATCH settings.gradle ==="
+          cat android/settings.gradle | tail -n 30
+          echo "=== AFTER PATCH build.gradle top 60 ==="
+          sed -n '1,70p' android/build.gradle
+
+      - name: Setup SDK NDK
         run: |
-          export ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}
+          export ANDROID_HOME=$ANDROID_HOME
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "ndk;29.0.14206865" "cmake;3.22.1" || true
+          yes | sdkmanager --licenses || true
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           echo "ndk.dir=$ANDROID_HOME/ndk/29.0.14206865" >> android/local.properties
-          sdkmanager --install "ndk;29.0.14206865" "cmake;3.22.1" "platforms;android-34" "build-tools;34.0.0" || true
+          cat android/local.properties
 
-      - name: Build Web Debug
+      - name: Build Web Debug arm64
         run: |
           cd android
-          ./gradlew assembleWebDebug -Parm64 --stacktrace --info 2>&1 | head -n 200
-          ./gradlew assembleWebDebug -Parm64 --stacktrace
+          chmod +x gradlew
+          ./gradlew :app:assembleWebDebug -Parm64 --stacktrace
 
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: SIM-Maps-APK-Geandre-v49-PATCHED
+          name: SIM-Maps-APK-Geandre-v53-FIXED
           path: android/app/build/outputs/apk/**/*.apk
