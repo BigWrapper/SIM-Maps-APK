@@ -40,10 +40,7 @@ include ':sdk:maps:world'
 include ':sdk:widgets:lanes'
 include ':sdk:widgets:speedlimit'
 
-// Fix for Gradle 9 compatibility - allow duplicate names
-buildCache { local { isEnabled = false } }
-
-// FIX for Gradle 8 - allow duplicate project names (Organic Maps needs this)
+// Allow duplicate project names - needed for newer Gradle
 gradleEnterprise {
   buildScan {
     allowDuplicateProjectNames = true

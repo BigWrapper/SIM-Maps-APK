@@ -21,5 +21,5 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: SIM-Maps-APK-Geandre-v43-FIXED
+          name: SIM-Maps-APK-Geandre-v44
           path: android/app/build/outputs/apk/debug/*.apk
